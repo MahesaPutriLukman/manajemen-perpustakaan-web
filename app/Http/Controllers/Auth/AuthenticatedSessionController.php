@@ -28,15 +28,17 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // --- LOGIKA REDIRECT SESUAI ROLE ---
         $role = $request->user()->role;
 
         if ($role === 'admin') {
-            return redirect()->route('admin.dashboard');
+            return redirect()->intended(route('admin.dashboard'));
         } elseif ($role === 'pegawai') {
-            return redirect()->route('pegawai.dashboard');
-        } else {
-            return redirect()->route('dashboard');
-        }
+            return redirect()->intended(route('pegawai.dashboard'));
+        } 
+        
+        // Default untuk Mahasiswa
+        return redirect()->intended(route('dashboard'));
     }
 
     /**

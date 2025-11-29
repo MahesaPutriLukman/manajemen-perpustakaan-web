@@ -84,7 +84,7 @@ class LoanController extends Controller
 
         if ($loan->status == 'returned') return back();
 
-        // 1. Ambil Tanggal Saja (Reset jam ke 00:00:00) biar hitungannya bulat
+        // 1. Reset jam
         $today = Carbon::now()->startOfDay(); 
         $dueDate = Carbon::parse($loan->due_date)->startOfDay();
         
@@ -93,33 +93,49 @@ class LoanController extends Controller
 
         // 2. Hitung Denda
         if ($today->gt($dueDate)) {
-            // Gunakan abs() sebagai pengaman agar tidak ada nilai minus
             $lateDays = abs($today->diffInDays($dueDate));
             $fineAmount = $lateDays * $book->fine_per_day;
             $paymentStatus = 'pending'; 
         }
 
-        // 3. Update Database
+        // 3. Update Database Loan
         $loan->update([
-            'return_date' => Carbon::now(), // Untuk record, tetap simpan jam aslinya
+            'return_date' => Carbon::now(),
             'status' => 'returned',
             'fine_amount' => $fineAmount,
             'payment_status' => $paymentStatus
         ]);
 
+        // 4. Kembalikan Stok
         $book->increment('stock');
 
-        // 4. Notifikasi & Redirect
+        // --- LOGIKA BARU: CEK RESERVASI ---
+        // Cari siapa yang sedang reservasi buku ini (status active)
+        $reservations = \App\Models\Reservation::where('book_id', $book->id)
+                                               ->where('status', 'active')
+                                               ->get();
+
+        foreach ($reservations as $reservation) {
+            // Kirim Notifikasi ke pemesan
+            $reservation->user->notify(new GeneralNotification(
+                "HORE! Buku '" . $book->title . "' yang kamu reservasi sudah tersedia. Segera pinjam sebelum kehabisan!"
+            ));
+            
+            // Opsional: Tandai reservasi selesai (fulfilled) agar tidak dinotif terus
+            // Atau biarkan active sampai dia beneran pinjam. 
+            // Kita ubah ke fulfilled supaya antrean dianggap 'sudah dipanggil'
+            $reservation->update(['status' => 'fulfilled']);
+        }
+        // ----------------------------------
+
+        // 5. Notifikasi Denda / Sukses ke Peminjam Awal
         if ($fineAmount > 0) {
-            // Kirim notifikasi kena denda
             $loan->user->notify(new GeneralNotification(
                 "Buku '" . $book->title . "' dikembalikan Terlambat $lateDays hari. Denda: Rp " . number_format($fineAmount)
             ));
-            
             return back()->with('warning', 'Buku telat ' . $lateDays . ' hari. Denda: Rp ' . number_format($fineAmount));
         }
 
-        // Kirim notifikasi sukses
         $loan->user->notify(new GeneralNotification("Buku '" . $book->title . "' telah dikembalikan. Terima kasih!"));
 
         return back()->with('success', 'Buku dikembalikan tepat waktu.');

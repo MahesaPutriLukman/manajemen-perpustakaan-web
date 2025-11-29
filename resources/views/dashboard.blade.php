@@ -134,6 +134,49 @@
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 text-gray-900">
+                    <h3 class="text-lg font-bold mb-4 text-yellow-600 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        ⏳ Antrean Reservasi Saya
+                    </h3>
+
+                    @if($reservations->isEmpty())
+                        <p class="text-gray-500 italic text-sm">Tidak ada buku yang sedang direservasi.</p>
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full bg-white border border-gray-200">
+                                <thead class="bg-yellow-50">
+                                    <tr>
+                                        <th class="py-2 px-4 border-b text-left">Judul Buku</th>
+                                        <th class="py-2 px-4 border-b text-left">Penulis</th>
+                                        <th class="py-2 px-4 border-b text-center">Tanggal Request</th>
+                                        <th class="py-2 px-4 border-b text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($reservations as $res)
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="py-2 px-4 border-b font-medium">{{ $res->book->title }}</td>
+                                        <td class="py-2 px-4 border-b">{{ $res->book->author }}</td>
+                                        <td class="py-2 px-4 border-b text-center">{{ $res->created_at->format('d M Y') }}</td>
+                                        <td class="py-2 px-4 border-b text-center">
+                                            <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-bold border border-yellow-200">
+                                                Menunggu Stok
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">*Notifikasi akan dikirim otomatis saat buku tersedia.</p>
+                    @endif
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="p-6 text-gray-900">
                     <h3 class="text-lg font-bold mb-4 text-gray-700">📜 Riwayat Peminjaman</h3>
 
                     @if($historyLoans->isEmpty())

@@ -58,6 +58,15 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
+        // --- LOGIKA REDIRECT SESUAI ROLE ---
+        $role = $user->role;
+
+        if ($role === 'admin') {
+            return redirect(route('admin.dashboard', absolute: false));
+        } elseif ($role === 'pegawai') {
+            return redirect(route('pegawai.dashboard', absolute: false));
+        }
+
         return redirect(route('dashboard', absolute: false));
     }
 }

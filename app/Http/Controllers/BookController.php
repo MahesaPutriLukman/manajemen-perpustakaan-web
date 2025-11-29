@@ -88,7 +88,10 @@ class BookController extends Controller
             'title' => 'required|string|max:255',
             'author' => 'required|string|max:255',
             'publisher' => 'required|string|max:255',
-            'publication_year' => 'required|integer|min:1900|max:'.(date('Y')+1),
+            
+            // UBAH DISINI: Ganti 1900 jadi 1000 (atau hapus min:1900 nya)
+            'publication_year' => 'required|integer|max:'.(date('Y')+1),
+            
             'category' => 'required|string',
             'stock' => 'required|integer|min:0',
             'max_loan_days' => 'integer|min:1',
@@ -153,7 +156,7 @@ class BookController extends Controller
             'title' => 'required|string|max:255',
             'author' => 'required|string|max:255',
             'publisher' => 'required|string|max:255',
-            'publication_year' => 'required|integer|min:1900|max:'.(date('Y')+1),
+            'publication_year' => 'required|integer|max:'.(date('Y')+1),
             'category' => 'required|string',
             'stock' => 'required|integer|min:0',
             'max_loan_days' => 'integer|min:1',

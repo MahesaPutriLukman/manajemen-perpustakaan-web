@@ -37,11 +37,11 @@ Route::get('/', function (Request $request) {
 
 // --- GROUP ROUTE ADMIN ---
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin/dashboard', function () {
-        return view('admin.dashboard'); 
-    })->name('admin.dashboard');
+    
+    // GANTI ROUTE DASHBOARD LAMA DENGAN INI:
+    Route::get('/admin/dashboard', [\App\Http\Controllers\AdminController::class, 'index'])->name('admin.dashboard');
 
-    // CRUD User Management
+    // CRUD User Management (Tetap)
     Route::resource('users', UserController::class);
 });
 
@@ -64,6 +64,7 @@ Route::middleware(['auth', 'role:pegawai'])->group(function () {
 });
 
 // --- GROUP ROUTE MAHASISWA ---
+// --- GROUP ROUTE MAHASISWA ---
 Route::middleware(['auth', 'role:mahasiswa'])->group(function () {
     Route::get('/dashboard', function () {
         $user = Auth::user();
@@ -72,16 +73,19 @@ Route::middleware(['auth', 'role:mahasiswa'])->group(function () {
         $activeLoans = Loan::with('book')->where('user_id', $user->id)->where('status', 'borrowed')->get();
         $historyLoans = Loan::with('book')->where('user_id', $user->id)->where('status', 'returned')->orderBy('updated_at', 'desc')->get();
 
-        // 2. Data Notifikasi (Ambil 5 terbaru)
+        // 2. Data Notifikasi
         $notifications = $user->notifications()->latest()->take(5)->get();
 
-        // 3. LOGIKA REKOMENDASI CERDAS
-        // Cek buku apa yang terakhir dipinjam user
+        // 3. Data Reservasi (INI YANG TADI KURANG)
+        $reservations = \App\Models\Reservation::with('book')
+                        ->where('user_id', $user->id)
+                        ->where('status', 'active')
+                        ->orderBy('created_at', 'desc')
+                        ->get();
+
+        // 4. Data Rekomendasi
         $lastLoan = Loan::with('book')->where('user_id', $user->id)->latest()->first();
-        
         if ($lastLoan) {
-            // Kalau pernah pinjam, cari buku lain yang KATEGORINYA SAMA
-            // Tapi jangan tampilkan buku yang sedang dipinjam sekarang
             $category = $lastLoan->book->category;
             $recommendations = Book::where('category', $category)
                                 ->where('id', '!=', $lastLoan->book_id) 
@@ -89,11 +93,11 @@ Route::middleware(['auth', 'role:mahasiswa'])->group(function () {
                                 ->limit(3)
                                 ->get();
         } else {
-            // Kalau user baru (belum pernah pinjam), tampilkan buku Random/Terbaru
             $recommendations = Book::latest()->limit(3)->get();
         }
 
-        return view('dashboard', compact('activeLoans', 'historyLoans', 'notifications', 'recommendations'));
+        // Jangan lupa masukkan 'reservations' ke dalam compact
+        return view('dashboard', compact('activeLoans', 'historyLoans', 'notifications', 'recommendations', 'reservations'));
     })->name('dashboard');
 });
 
@@ -117,6 +121,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/books/{id}/review', [BookController::class, 'storeReview'])->name('books.review');
     // Route Riwayat Notifikasi Lengkap
     Route::get('/notifications', [ProfileController::class, 'notifications'])->name('notifications.index');
+    // Route Reservasi (Advanced Feature)
+    Route::post('/reservations', [\App\Http\Controllers\ReservationController::class, 'store'])->name('reservations.store');
 });
 
 require __DIR__.'/auth.php';

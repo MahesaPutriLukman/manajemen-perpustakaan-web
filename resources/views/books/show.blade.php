@@ -8,7 +8,7 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-            <div class="mb-4">
+            <div class="mb-6">
                 @if(session('success'))
                     <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative shadow-sm">
                         <strong class="font-bold">Berhasil!</strong>
@@ -18,11 +18,12 @@
 
                 @if(session('error'))
                     <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative shadow-sm animate-pulse">
-                        <strong class="font-bold">⛔ AKSES DITOLAK!</strong>
+                        <strong class="font-bold">⛔ Gagal!</strong>
                         <span class="block sm:inline">{{ session('error') }}</span>
                     </div>
                 @endif
             </div>
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
                 <div class="md:col-span-1">
@@ -48,26 +49,38 @@
 
                         @auth
                             @if(Auth::user()->role == 'mahasiswa')
+                                
                                 @if($book->stock > 0)
                                     <form action="{{ route('loans.store') }}" method="POST" class="w-full">
                                         @csrf
                                         <input type="hidden" name="book_id" value="{{ $book->id }}">
-                                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition" onclick="return confirm('Yakin pinjam buku ini?')">
+                                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition shadow" onclick="return confirm('Yakin pinjam buku ini?')">
                                             Pinjam Sekarang
                                         </button>
                                     </form>
                                 @else
-                                    <button disabled class="w-full bg-gray-300 text-gray-500 font-bold py-2 px-4 rounded cursor-not-allowed">
-                                        Stok Habis
-                                    </button>
+                                    <div class="bg-yellow-50 p-3 rounded border border-yellow-200">
+                                        <p class="text-xs text-yellow-800 mb-2">Buku sedang kosong. Antre sekarang?</p>
+                                        <form action="{{ route('reservations.store') }}" method="POST" class="w-full">
+                                            @csrf
+                                            <input type="hidden" name="book_id" value="{{ $book->id }}">
+                                            <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded transition flex items-center justify-center shadow">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                Reservasi (Antre)
+                                            </button>
+                                        </form>
+                                    </div>
                                 @endif
+
                             @elseif(Auth::user()->role == 'admin')
-                                <a href="{{ route('books.edit', $book->id) }}" class="block w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded text-center">
+                                <a href="{{ route('books.edit', $book->id) }}" class="block w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded text-center shadow">
                                     Edit Buku
                                 </a>
                             @endif
                         @else
-                            <a href="{{ route('login') }}" class="block w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded text-center">
+                            <a href="{{ route('login') }}" class="block w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded text-center shadow">
                                 Login untuk Pinjam
                             </a>
                         @endauth
@@ -107,8 +120,8 @@
                         <form action="{{ route('books.review', $book->id) }}" method="POST">
                             @csrf
                             <div class="mb-4">
-                                <label class="block text-sm font-bold mb-1">Rating (Bintang)</label>
-                                <select name="rating" class="border rounded px-3 py-2 w-full md:w-1/3">
+                                <label class="block text-sm font-bold mb-1">Rating</label>
+                                <select name="rating" class="border rounded px-3 py-2 w-full md:w-1/3 focus:ring focus:ring-yellow-200">
                                     <option value="5">⭐⭐⭐⭐⭐ (Sangat Bagus)</option>
                                     <option value="4">⭐⭐⭐⭐ (Bagus)</option>
                                     <option value="3">⭐⭐⭐ (Cukup)</option>
@@ -118,9 +131,9 @@
                             </div>
                             <div class="mb-4">
                                 <label class="block text-sm font-bold mb-1">Komentar</label>
-                                <textarea name="comment" rows="3" class="w-full border rounded px-3 py-2" placeholder="Tulis pendapatmu di sini..." required></textarea>
+                                <textarea name="comment" rows="3" class="w-full border rounded px-3 py-2 focus:ring focus:ring-yellow-200" placeholder="Tulis pendapatmu..." required></textarea>
                             </div>
-                            <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-6 rounded">
+                            <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-6 rounded shadow">
                                 Kirim Ulasan
                             </button>
                         </form>

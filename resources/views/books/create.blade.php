@@ -10,27 +10,37 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     
+                    @if ($errors->any())
+                        <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                            <strong class="font-bold">Gagal Menyimpan!</strong>
+                            <ul class="mt-1 list-disc list-inside text-sm">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
                     <form action="{{ route('books.store') }}" method="POST">
                         @csrf <div class="mb-4">
                             <label class="block text-gray-700 text-sm font-bold mb-2">Judul Buku</label>
-                            <input type="text" name="title" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                            <input type="text" name="title" value="{{ old('title') }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4 mb-4">
                             <div>
                                 <label class="block text-gray-700 text-sm font-bold mb-2">Penulis</label>
-                                <input type="text" name="author" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required>
+                                <input type="text" name="author" value="{{ old('author') }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required>
                             </div>
                             <div>
                                 <label class="block text-gray-700 text-sm font-bold mb-2">Penerbit</label>
-                                <input type="text" name="publisher" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required>
+                                <input type="text" name="publisher" value="{{ old('publisher') }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required>
                             </div>
                         </div>
 
                         <div class="grid grid-cols-3 gap-4 mb-4">
                             <div>
                                 <label class="block text-gray-700 text-sm font-bold mb-2">Tahun Terbit</label>
-                                <input type="number" name="publication_year" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required>
+                                <input type="number" name="publication_year" value="{{ old('publication_year') }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required>
                             </div>
                             <div>
                                 <label class="block text-gray-700 text-sm font-bold mb-2">Kategori</label>
@@ -44,7 +54,7 @@
                             </div>
                             <div>
                                 <label class="block text-gray-700 text-sm font-bold mb-2">Stok Awal</label>
-                                <input type="number" name="stock" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required>
+                                <input type="number" name="stock" value="{{ old('stock') }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required>
                             </div>
                         </div>
 
@@ -53,11 +63,11 @@
                         <div class="grid grid-cols-2 gap-4 mb-4">
                             <div>
                                 <label class="block text-gray-700 text-sm font-bold mb-2">Max Pinjam (Hari)</label>
-                                <input type="number" name="max_loan_days" value="7" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700">
+                                <input type="number" name="max_loan_days" value="{{ old('max_loan_days', 7) }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700">
                             </div>
                             <div>
                                 <label class="block text-gray-700 text-sm font-bold mb-2">Denda / Hari (Rp)</label>
-                                <input type="number" name="fine_per_day" value="1000" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700">
+                                <input type="number" name="fine_per_day" value="{{ old('fine_per_day', 1000) }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700">
                             </div>
                         </div>
 
