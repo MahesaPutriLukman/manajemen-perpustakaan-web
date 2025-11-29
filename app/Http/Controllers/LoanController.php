@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Loan;
 use App\Models\Book;
+use App\Notifications\GeneralNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -26,19 +27,34 @@ class LoanController extends Controller
         }
 
         // CEK 2: Blokir jika sedang meminjam buku yang sama
-        $isBorrowing = Loan::where('user_id', $user->id)->where('book_id', $book->id)->where('status', 'borrowed')->exists();
+        $isBorrowing = Loan::where('user_id', $user->id)
+                           ->where('book_id', $book->id)
+                           ->where('status', 'borrowed')
+                           ->exists();
+                           
         if ($isBorrowing) {
             return back()->with('error', 'Anda sedang meminjam buku ini.');
         }
 
-        // CEK 3: BLOKIR JIKA ADA DENDA TERTUNGGAK (Sesuai PDF)
+        // CEK 3: BLOKIR JIKA ADA DENDA BELUM LUNAS (History)
         $hasUnpaidFine = Loan::where('user_id', $user->id)
-                             ->where('payment_status', 'pending') // Denda belum lunas
+                             ->where('payment_status', 'pending')
                              ->exists();
                              
         if ($hasUnpaidFine) {
             return back()->with('error', 'ANDA DIBLOKIR! Harap lunasi denda sebelumnya di perpustakaan.');
         }
+
+        // --- CEK 4 (BARU): BLOKIR JIKA ADA BUKU YANG SEDANG TELAT (Active) ---
+        $hasOverdueItem = Loan::where('user_id', $user->id)
+                              ->where('status', 'borrowed')
+                              ->where('due_date', '<', Carbon::now()->startOfDay()) // Cek apakah jatuh tempo < hari ini
+                              ->exists();
+
+        if ($hasOverdueItem) {
+            return back()->with('error', 'ANDA DIBLOKIR! Anda masih meminjam buku yang sudah lewat jatuh tempo. Harap kembalikan dulu.');
+        }
+        // ---------------------------------------------------------------------
 
         // PROSES PINJAM
         $book->decrement('stock');
@@ -48,15 +64,18 @@ class LoanController extends Controller
             'loan_date' => Carbon::now(),
             'due_date' => Carbon::now()->addDays($book->max_loan_days),
             'status' => 'borrowed',
-            'payment_status' => 'no_fine', // Awal pinjam dianggap aman
+            'payment_status' => 'no_fine', 
         ]);
+
+        // Kirim Notifikasi
+        $user->notify(new GeneralNotification("Anda berhasil meminjam buku: " . $book->title . ". Harap kembalikan sebelum " . $book->max_loan_days . " hari."));
 
         return redirect()->route('dashboard')->with('success', 'Berhasil meminjam buku!');
     }
 
     /**
      * LOGIKA 2: KEMBALIKAN BUKU (Pegawai)
-     * + Hitung Denda Otomatis
+     * + Hitung Denda Otomatis (FIXED: StartOfDay & Abs)
      */
     public function returnBook($id)
     {
@@ -65,20 +84,24 @@ class LoanController extends Controller
 
         if ($loan->status == 'returned') return back();
 
-        $today = Carbon::now();
-        $dueDate = Carbon::parse($loan->due_date);
+        // 1. Ambil Tanggal Saja (Reset jam ke 00:00:00) biar hitungannya bulat
+        $today = Carbon::now()->startOfDay(); 
+        $dueDate = Carbon::parse($loan->due_date)->startOfDay();
+        
         $fineAmount = 0;
         $paymentStatus = 'no_fine';
 
-        // Hitung Denda
+        // 2. Hitung Denda
         if ($today->gt($dueDate)) {
-            $lateDays = $today->diffInDays($dueDate);
+            // Gunakan abs() sebagai pengaman agar tidak ada nilai minus
+            $lateDays = abs($today->diffInDays($dueDate));
             $fineAmount = $lateDays * $book->fine_per_day;
-            $paymentStatus = 'pending'; // Tandai punya utang denda
+            $paymentStatus = 'pending'; 
         }
 
+        // 3. Update Database
         $loan->update([
-            'return_date' => $today,
+            'return_date' => Carbon::now(), // Untuk record, tetap simpan jam aslinya
             'status' => 'returned',
             'fine_amount' => $fineAmount,
             'payment_status' => $paymentStatus
@@ -86,12 +109,22 @@ class LoanController extends Controller
 
         $book->increment('stock');
 
+        // 4. Notifikasi & Redirect
         if ($fineAmount > 0) {
-            return back()->with('warning', 'Buku telat! Denda: Rp ' . number_format($fineAmount));
+            // Kirim notifikasi kena denda
+            $loan->user->notify(new GeneralNotification(
+                "Buku '" . $book->title . "' dikembalikan Terlambat $lateDays hari. Denda: Rp " . number_format($fineAmount)
+            ));
+            
+            return back()->with('warning', 'Buku telat ' . $lateDays . ' hari. Denda: Rp ' . number_format($fineAmount));
         }
+
+        // Kirim notifikasi sukses
+        $loan->user->notify(new GeneralNotification("Buku '" . $book->title . "' telah dikembalikan. Terima kasih!"));
 
         return back()->with('success', 'Buku dikembalikan tepat waktu.');
     }
+    
 
     /**
      * LOGIKA 3: PERPANJANG BUKU / RENEW (Mahasiswa)
@@ -108,6 +141,10 @@ class LoanController extends Controller
         // Tambah 3 Hari
         $newDueDate = Carbon::parse($loan->due_date)->addDays(3);
         $loan->update(['due_date' => $newDueDate]);
+
+        // Kirim Notifikasi
+        $message = "Perpanjangan Berhasil! Buku '" . $loan->book->title . "' diperpanjang sampai tanggal " . $newDueDate->format('d-m-Y') . ".";
+        $loan->user->notify(new GeneralNotification($message));
 
         return back()->with('success', 'Berhasil diperpanjang 3 hari!');
     }

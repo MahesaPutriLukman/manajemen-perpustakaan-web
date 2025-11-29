@@ -9,7 +9,6 @@ class Loan extends Model
 {
     use HasFactory;
 
-    // KITA TAMBAHKAN 'payment_status' DI SINI BIAR BISA DISIMPAN
     protected $fillable = [
         'user_id',
         'book_id',
@@ -19,6 +18,14 @@ class Loan extends Model
         'status',
         'fine_amount',
         'payment_status', 
+    ];
+
+    // --- TAMBAHAN PENTING: CASTING ---
+    // Ini mengubah string tanggal dari database menjadi Objek Carbon otomatis
+    protected $casts = [
+        'loan_date' => 'date',
+        'due_date' => 'date',
+        'return_date' => 'date',
     ];
 
     // Relasi ke User

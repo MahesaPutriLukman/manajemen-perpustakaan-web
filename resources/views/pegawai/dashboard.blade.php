@@ -26,7 +26,17 @@
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 text-gray-900">
-                    <h3 class="text-lg font-bold mb-4 text-blue-700">📚 Daftar Buku yang Sedang Dipinjam</h3>
+                    
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-blue-700">📚 Daftar Buku yang Sedang Dipinjam</h3>
+                        
+                        <a href="{{ route('pegawai.trigger.reminders') }}" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded shadow-lg text-sm flex items-center transition duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            Kirim Pengingat Jatuh Tempo
+                        </a>
+                    </div>
 
                     <div class="overflow-x-auto">
                         <table class="min-w-full bg-white border border-gray-200">
@@ -36,22 +46,55 @@
                                     <th class="py-2 px-4 border-b text-left">Buku</th>
                                     <th class="py-2 px-4 border-b text-center">Tgl Pinjam</th>
                                     <th class="py-2 px-4 border-b text-center">Jatuh Tempo</th>
+                                    <th class="py-2 px-4 border-b text-center">Status Denda (Estimasi)</th>
                                     <th class="py-2 px-4 border-b text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($loans as $loan)
+                                @php
+                                    // LOGIKA HITUNG DENDA SEMENTARA
+                                    $today = \Carbon\Carbon::now()->startOfDay();
+                                    $dueDate = \Carbon\Carbon::parse($loan->due_date)->startOfDay();
+                                    
+                                    $lateDays = 0;
+                                    $estimatedFine = 0;
+
+                                    if ($today->gt($dueDate)) {
+                                        // Paksa positif dengan abs()
+                                        $lateDays = abs($today->diffInDays($dueDate));
+                                        $estimatedFine = $lateDays * $loan->book->fine_per_day;
+                                    }
+                                @endphp
+
                                 <tr class="hover:bg-gray-50">
                                     <td class="py-2 px-4 border-b">{{ $loan->user->name }}</td>
                                     <td class="py-2 px-4 border-b">{{ $loan->book->title }}</td>
-                                    <td class="py-2 px-4 border-b text-center">{{ $loan->loan_date }}</td>
-                                    <td class="py-2 px-4 border-b text-center text-red-600 font-bold">
-                                        {{ $loan->due_date }}
+                                    <td class="py-2 px-4 border-b text-center">{{ $loan->loan_date->format('d-m-Y') }}</td>
+                                    
+                                    <td class="py-2 px-4 border-b text-center font-bold {{ $estimatedFine > 0 ? 'text-red-600' : 'text-gray-800' }}">
+                                        {{ $loan->due_date->format('d-m-Y') }}
                                     </td>
+
                                     <td class="py-2 px-4 border-b text-center">
-                                        <form action="{{ route('loans.return', $loan->id) }}" method="POST" onsubmit="return confirm('Apakah buku ini sudah dikembalikan fisik?');">
+                                        @if($estimatedFine > 0)
+                                            <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-bold">
+                                                Telat {{ $lateDays }} Hari
+                                            </span>
+                                            <div class="text-xs text-red-600 mt-1 font-bold">
+                                                Rp {{ number_format($estimatedFine, 0, ',', '.') }}
+                                            </div>
+                                        @else
+                                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">
+                                                Aman
+                                            </span>
+                                        @endif
+                                    </td>
+
+                                    <td class="py-2 px-4 border-b text-center">
+                                        <form action="{{ route('loans.return', $loan->id) }}" method="POST" onsubmit="return confirm('Pastikan denda Rp {{ number_format($estimatedFine) }} (jika ada) sudah diinfokan ke mahasiswa. Lanjut?');">
                                             @csrf
-                                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-800 text-white font-bold py-1 px-3 rounded text-sm">
+                                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-800 text-white font-bold py-1 px-3 rounded text-sm shadow hover:shadow-lg transition">
                                                 Konfirmasi Kembali
                                             </button>
                                         </form>
@@ -59,7 +102,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="5" class="py-8 text-center text-gray-500">
+                                    <td colspan="6" class="py-8 text-center text-gray-500">
                                         Tidak ada buku yang sedang dipinjam saat ini.
                                     </td>
                                 </tr>
@@ -75,7 +118,7 @@
                     <h3 class="text-lg font-bold mb-4 text-red-600">💸 Daftar Denda Belum Lunas</h3>
                     
                     @php
-                        // Ambil data denda pending langsung di View (Praktis)
+                        // Ambil data denda pending
                         $unpaidFines = App\Models\Loan::with('user')->where('payment_status', 'pending')->get();
                     @endphp
 
@@ -98,7 +141,7 @@
                                     <td class="py-2 px-4 border-b text-center">
                                         <form action="{{ route('loans.pay', $fine->id) }}" method="POST">
                                             @csrf
-                                            <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm shadow" onclick="return confirm('Yakin denda sudah dibayar lunas?')">
+                                            <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm shadow hover:shadow-lg transition" onclick="return confirm('Yakin denda sudah dibayar lunas?')">
                                                 Tandai Lunas ✅
                                             </button>
                                         </form>

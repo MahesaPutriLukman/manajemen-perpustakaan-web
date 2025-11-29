@@ -19,10 +19,56 @@ class BookController extends Controller
     /**
      * Menampilkan daftar buku.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $books = Book::all();
-        return view('books.index', compact('books'));
+        // Mulai Query
+        $query = Book::query();
+
+        // 1. Logic Search (Pencarian)
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                  ->orWhere('author', 'like', '%' . $search . '%');
+            });
+        }
+
+        // 2. Logic Filter Kategori
+        if ($request->has('category') && $request->category != '') {
+            $query->where('category', $request->category);
+        }
+
+        // 3. Logic Sorting (Pengurutan)
+        if ($request->has('sort')) {
+            switch ($request->sort) {
+                case 'newest':
+                    $query->orderBy('created_at', 'desc'); // Terbaru diinput
+                    break;
+                case 'year_desc':
+                    $query->orderBy('publication_year', 'desc'); // Tahun Terbit Terbaru
+                    break;
+                case 'year_asc':
+                    $query->orderBy('publication_year', 'asc'); // Tahun Terbit Terlama
+                    break;
+                case 'title_asc':
+                    $query->orderBy('title', 'asc'); // Judul A-Z
+                    break;
+                case 'stock_desc':
+                    $query->orderBy('stock', 'desc'); // Stok Terbanyak
+                    break;
+                default:
+                    $query->latest();
+            }
+        } else {
+            $query->latest(); // Default
+        }
+
+        $books = $query->get();
+        
+        // Ambil daftar kategori unik untuk dropdown filter
+        $categories = Book::select('category')->distinct()->pluck('category');
+
+        return view('books.index', compact('books', 'categories'));
     }
 
     /**
@@ -86,6 +132,64 @@ class BookController extends Controller
     }
 
     /**
+     * Tampilkan Form Edit Buku
+     */
+    public function edit($id)
+    {
+        // Cari buku berdasarkan ID, kalau ga ketemu error 404
+        $book = Book::findOrFail($id);
+        
+        // Tampilkan view edit yang barusan kita buat
+        return view('books.edit', compact('book'));
+    }
+
+    /**
+     * Proses Update Data Buku ke Database
+     */
+    public function update(Request $request, $id)
+    {
+        // 1. Validasi Input (Mirip store, tapi tidak perlu cek unique)
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'author' => 'required|string|max:255',
+            'publisher' => 'required|string|max:255',
+            'publication_year' => 'required|integer|min:1900|max:'.(date('Y')+1),
+            'category' => 'required|string',
+            'stock' => 'required|integer|min:0',
+            'max_loan_days' => 'integer|min:1',
+            'fine_per_day' => 'numeric|min:0',
+        ]);
+
+        // 2. Ambil buku & Update
+        $book = Book::findOrFail($id);
+        
+        $book->update([
+            'title' => $request->title,
+            'author' => $request->author,
+            'publisher' => $request->publisher,
+            'publication_year' => $request->publication_year,
+            'category' => $request->category,
+            'stock' => $request->stock,
+            'max_loan_days' => $request->max_loan_days,
+            'fine_per_day' => $request->fine_per_day,
+        ]);
+
+        // 3. Redirect ke halaman detail atau index
+        return redirect()->route('books.index')->with('success', 'Data buku berhasil diperbarui!');
+    }
+
+    /**
+     * Hapus Buku
+     */
+    public function destroy($id)
+    {
+        $book = Book::findOrFail($id);
+        $book->delete();
+
+        return redirect()->route('books.index')->with('success', 'Buku berhasil dihapus dari koleksi.');
+    }
+
+    /**
      * Simpan Review Baru
      */
     public function storeReview(Request $request, $book_id)
@@ -103,29 +207,5 @@ class BookController extends Controller
         ]);
 
         return back()->with('success', 'Terima kasih atas ulasanmu!');
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
     }
 }
