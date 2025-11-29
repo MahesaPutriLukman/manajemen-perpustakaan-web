@@ -12,6 +12,17 @@
                 <div class="p-6 text-gray-900">
                     <h3 class="text-lg font-bold mb-4 text-blue-600">📚 Sedang Dipinjam</h3>
                     
+                    @if(session('success'))
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+                    @if(session('error'))
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
                     @if($activeLoans->isEmpty())
                         <p class="text-gray-500 italic">Kamu tidak sedang meminjam buku apapun.</p>
                         <a href="{{ route('books.index') }}" class="mt-2 inline-block text-sm text-blue-500 hover:underline">-> Cari Buku di Koleksi</a>
@@ -24,6 +35,7 @@
                                         <th class="py-2 px-4 border-b text-center">Tanggal Pinjam</th>
                                         <th class="py-2 px-4 border-b text-center">Wajib Kembali</th>
                                         <th class="py-2 px-4 border-b text-center">Status</th>
+                                        <th class="py-2 px-4 border-b text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -38,6 +50,14 @@
                                             <span class="bg-yellow-200 text-yellow-800 text-xs px-2 py-1 rounded-full">
                                                 Dipinjam
                                             </span>
+                                        </td>
+                                        <td class="py-2 px-4 border-b text-center">
+                                            <form action="{{ route('loans.renew', $loan->id) }}" method="POST">
+                                                @csrf
+                                                <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded shadow">
+                                                    Perpanjang (+3 Hari)
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
                                     @endforeach
@@ -75,6 +95,11 @@
                                         <td class="py-2 px-4 border-b text-center">
                                             @if($loan->fine_amount > 0)
                                                 <span class="text-red-600 font-bold">Rp {{ number_format($loan->fine_amount, 0, ',', '.') }}</span>
+                                                @if($loan->payment_status == 'pending')
+                                                    <span class="text-xs bg-red-100 text-red-800 px-1 rounded">Belum Lunas</span>
+                                                @else
+                                                    <span class="text-xs bg-green-100 text-green-800 px-1 rounded">Lunas</span>
+                                                @endif
                                             @else
                                                 <span class="text-green-600">-</span>
                                             @endif

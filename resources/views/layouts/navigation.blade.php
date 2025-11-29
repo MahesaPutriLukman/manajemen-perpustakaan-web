@@ -11,10 +11,22 @@
                 </div>
 
                 <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
+                    @php
+                        $role = Auth::user()->role;
+                        $dashboardRoute = 'dashboard'; // Default mahasiswa
+                        
+                        if($role == 'admin') {
+                            $dashboardRoute = 'admin.dashboard';
+                        } elseif($role == 'pegawai') {
+                            $dashboardRoute = 'pegawai.dashboard';
+                        }
+                    @endphp
+
+                    <x-nav-link :href="route($dashboardRoute)" :active="request()->routeIs($dashboardRoute)">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    
                     <x-nav-link :href="route('books.index')" :active="request()->routeIs('books.*')">
                         {{ __('Koleksi Buku') }}
                     </x-nav-link>

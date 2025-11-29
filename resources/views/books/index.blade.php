@@ -39,7 +39,11 @@
                             <tbody>
                                 @forelse($books as $book)
                                 <tr class="hover:bg-gray-50">
-                                    <td class="py-2 px-4 border-b font-medium">{{ $book->title }}</td>
+                                    <td class="py-2 px-4 border-b">
+                                        <a href="{{ route('books.show', $book->id) }}" class="font-bold text-blue-600 hover:underline">
+                                            {{ $book->title }}
+                                        </a>
+                                    </td>                                    
                                     <td class="py-2 px-4 border-b">{{ $book->author }}</td>
                                     <td class="py-2 px-4 border-b">
                                         <span class="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs">

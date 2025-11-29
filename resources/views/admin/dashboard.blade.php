@@ -13,8 +13,13 @@
                     <p>Ini adalah halaman khusus untuk mengelola User dan Buku.</p>
                     
                     <div class="mt-4 flex gap-4">
-                        <button class="bg-blue-500 text-white px-4 py-2 rounded">Kelola Buku</button>
-                        <button class="bg-green-500 text-white px-4 py-2 rounded">Kelola User</button>
+                        <a href="{{ route('books.index') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-lg transition duration-200">
+                            Kelola Buku
+                        </a>
+                        
+                        <a href="{{ route('users.index') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow-lg transition duration-200">
+                            Kelola User
+                        </a>
                     </div>
                 </div>
             </div>

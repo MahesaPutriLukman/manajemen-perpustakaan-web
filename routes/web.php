@@ -27,6 +27,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/dashboard', function () {
         return view('admin.dashboard'); 
     })->name('admin.dashboard');
+
+    Route::resource('users', \App\Http\Controllers\UserController::class);
 });
 
 Route::middleware(['auth', 'role:pegawai'])->group(function () {
@@ -58,17 +60,32 @@ Route::middleware(['auth', 'role:mahasiswa'])->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    // --- PROFIL USER ---
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // --- MANAJEMEN BUKU ---
     Route::resource('books', BookController::class); 
 
-    // 1. Route Proses Pinjam (Untuk tombol di index buku)
+    // --- MANAJEMEN PEMINJAMAN & DENDA (Complete) ---
+    
+    // 1. Proses Pinjam (Mahasiswa)
     Route::post('/loans', [App\Http\Controllers\LoanController::class, 'store'])->name('loans.store');
 
-    // 2. Route Proses Kembali (Nanti dipakai Pegawai)
+    // 2. Proses Perpanjang / Renew (Mahasiswa) -> INI BARU
+    Route::post('/loans/{id}/renew', [App\Http\Controllers\LoanController::class, 'renew'])->name('loans.renew');
+
+    // 3. Proses Kembali (Pegawai)
     Route::post('/loans/{id}/return', [App\Http\Controllers\LoanController::class, 'returnBook'])->name('loans.return');
+
+    // 4. Proses Bayar Denda (Pegawai) -> INI BARU
+    Route::post('/loans/{id}/pay', [App\Http\Controllers\LoanController::class, 'payFine'])->name('loans.pay');
+
+    // Route Kirim Review
+    Route::post('/books/{id}/review', [App\Http\Controllers\BookController::class, 'storeReview'])->name('books.review');
 });
+
+require __DIR__.'/auth.php';
 
 require __DIR__.'/auth.php';

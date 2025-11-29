@@ -5,29 +5,24 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Loan extends Model
+class Review extends Model
 {
     use HasFactory;
 
-    // KITA TAMBAHKAN 'payment_status' DI SINI BIAR BISA DISIMPAN
     protected $fillable = [
         'user_id',
         'book_id',
-        'loan_date',
-        'due_date',
-        'return_date',
-        'status',
-        'fine_amount',
-        'payment_status', 
+        'rating',
+        'comment',
     ];
 
-    // Relasi ke User
+    // Relasi: Review ini milik User siapa?
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // Relasi ke Buku
+    // Relasi: Review ini untuk Buku apa?
     public function book()
     {
         return $this->belongsTo(Book::class);

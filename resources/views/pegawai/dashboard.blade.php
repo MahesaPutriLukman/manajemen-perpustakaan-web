@@ -24,9 +24,9 @@
                 </div>
             @endif
 
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 text-gray-900">
-                    <h3 class="text-lg font-bold mb-4">Daftar Buku yang Sedang Dipinjam</h3>
+                    <h3 class="text-lg font-bold mb-4 text-blue-700">📚 Daftar Buku yang Sedang Dipinjam</h3>
 
                     <div class="overflow-x-auto">
                         <table class="min-w-full bg-white border border-gray-200">
@@ -69,6 +69,54 @@
                     </div>
                 </div>
             </div>
+
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900">
+                    <h3 class="text-lg font-bold mb-4 text-red-600">💸 Daftar Denda Belum Lunas</h3>
+                    
+                    @php
+                        // Ambil data denda pending langsung di View (Praktis)
+                        $unpaidFines = App\Models\Loan::with('user')->where('payment_status', 'pending')->get();
+                    @endphp
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-red-200">
+                            <thead class="bg-red-50">
+                                <tr>
+                                    <th class="py-2 px-4 border-b text-left">Peminjam</th>
+                                    <th class="py-2 px-4 border-b text-left">Total Denda</th>
+                                    <th class="py-2 px-4 border-b text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($unpaidFines as $fine)
+                                <tr>
+                                    <td class="py-2 px-4 border-b font-medium">{{ $fine->user->name }}</td>
+                                    <td class="py-2 px-4 border-b text-red-600 font-bold">
+                                        Rp {{ number_format($fine->fine_amount, 0, ',', '.') }}
+                                    </td>
+                                    <td class="py-2 px-4 border-b text-center">
+                                        <form action="{{ route('loans.pay', $fine->id) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm shadow" onclick="return confirm('Yakin denda sudah dibayar lunas?')">
+                                                Tandai Lunas ✅
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="3" class="text-center py-4 text-gray-500">
+                                        Tidak ada tunggakan denda saat ini. Aman!
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </x-app-layout>

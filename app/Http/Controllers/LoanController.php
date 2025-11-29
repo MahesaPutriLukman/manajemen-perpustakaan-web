@@ -6,96 +6,120 @@ use App\Models\Loan;
 use App\Models\Book;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon; // Wajib import ini buat mainan tanggal
+use Carbon\Carbon;
 
 class LoanController extends Controller
 {
     /**
-     * LOGIKA 1: MEMINJAM BUKU (Dipakai Mahasiswa)
+     * LOGIKA 1: MEMINJAM BUKU (Mahasiswa)
+     * + Fitur Blokir jika ada denda tertunggak
      */
     public function store(Request $request)
     {
-        // 1. Validasi: Pastikan buku & user valid
-        $request->validate([
-            'book_id' => 'required|exists:books,id',
-        ]);
-
+        $request->validate(['book_id' => 'required|exists:books,id']);
         $book = Book::findOrFail($request->book_id);
         $user = Auth::user();
 
-        // 2. Cek Stok Buku
+        // CEK 1: Blokir jika stok habis
         if ($book->stock < 1) {
-            return back()->with('error', 'Maaf, stok buku ini sedang habis.');
+            return back()->with('error', 'Stok buku habis.');
         }
 
-        // 3. Cek Apakah Mahasiswa Punya Denda Tertunggak? (Sesuai Soal)
-        // Kita cek apakah ada pinjaman dia yang statusnya 'returned' tapi dendanya belum lunas (opsional, tahap lanjut)
-        // Untuk sekarang kita cek apakah dia sedang minjam buku yang sama
-        $isBorrowing = Loan::where('user_id', $user->id)
-                            ->where('book_id', $book->id)
-                            ->where('status', 'borrowed')
-                            ->exists();
-
+        // CEK 2: Blokir jika sedang meminjam buku yang sama
+        $isBorrowing = Loan::where('user_id', $user->id)->where('book_id', $book->id)->where('status', 'borrowed')->exists();
         if ($isBorrowing) {
-            return back()->with('error', 'Anda sedang meminjam buku ini. Kembalikan dulu sebelum pinjam lagi.');
+            return back()->with('error', 'Anda sedang meminjam buku ini.');
         }
 
-        // 4. Proses Peminjaman
-        // Kurangi Stok
-        $book->decrement('stock');
+        // CEK 3: BLOKIR JIKA ADA DENDA TERTUNGGAK (Sesuai PDF)
+        $hasUnpaidFine = Loan::where('user_id', $user->id)
+                             ->where('payment_status', 'pending') // Denda belum lunas
+                             ->exists();
+                             
+        if ($hasUnpaidFine) {
+            return back()->with('error', 'ANDA DIBLOKIR! Harap lunasi denda sebelumnya di perpustakaan.');
+        }
 
-        // Catat di Tabel Loans
+        // PROSES PINJAM
+        $book->decrement('stock');
         Loan::create([
             'user_id' => $user->id,
             'book_id' => $book->id,
-            'loan_date' => Carbon::now(), // Hari ini
-            'due_date' => Carbon::now()->addDays($book->max_loan_days), // Jatuh tempo sesuai aturan buku
+            'loan_date' => Carbon::now(),
+            'due_date' => Carbon::now()->addDays($book->max_loan_days),
             'status' => 'borrowed',
+            'payment_status' => 'no_fine', // Awal pinjam dianggap aman
         ]);
 
-        return redirect()->route('books.index')->with('success', 'Berhasil meminjam buku! Jangan lupa kembalikan tepat waktu.');
+        return redirect()->route('dashboard')->with('success', 'Berhasil meminjam buku!');
     }
 
     /**
-     * LOGIKA 2: MENGEMBALIKAN BUKU (Dipakai Pegawai/Admin)
+     * LOGIKA 2: KEMBALIKAN BUKU (Pegawai)
+     * + Hitung Denda Otomatis
      */
-    public function returnBook($loan_id)
+    public function returnBook($id)
     {
-        $loan = Loan::findOrFail($loan_id);
+        $loan = Loan::findOrFail($id);
         $book = $loan->book;
 
-        // Cek apakah sudah dikembalikan sebelumnya
-        if ($loan->status == 'returned') {
-            return back()->with('error', 'Buku ini sudah dikembalikan.');
-        }
+        if ($loan->status == 'returned') return back();
 
-        // 1. Hitung Denda
         $today = Carbon::now();
         $dueDate = Carbon::parse($loan->due_date);
-        
         $fineAmount = 0;
-        
-        // Kalau hari ini lebih besar dari jatuh tempo, berarti telat
+        $paymentStatus = 'no_fine';
+
+        // Hitung Denda
         if ($today->gt($dueDate)) {
-            $lateDays = $today->diffInDays($dueDate); // Selisih hari
-            $fineAmount = $lateDays * $book->fine_per_day; // Hari x Denda per hari
+            $lateDays = $today->diffInDays($dueDate);
+            $fineAmount = $lateDays * $book->fine_per_day;
+            $paymentStatus = 'pending'; // Tandai punya utang denda
         }
 
-        // 2. Update Data Peminjaman
         $loan->update([
             'return_date' => $today,
             'status' => 'returned',
             'fine_amount' => $fineAmount,
+            'payment_status' => $paymentStatus
         ]);
 
-        // 3. Kembalikan Stok Buku
         $book->increment('stock');
 
-        // 4. Pesan Balikan
         if ($fineAmount > 0) {
-            return back()->with('warning', 'Buku dikembalikan TERLAMBAT. Denda: Rp ' . number_format($fineAmount, 0, ',', '.'));
+            return back()->with('warning', 'Buku telat! Denda: Rp ' . number_format($fineAmount));
         }
 
-        return back()->with('success', 'Buku berhasil dikembalikan. Terima kasih!');
+        return back()->with('success', 'Buku dikembalikan tepat waktu.');
+    }
+
+    /**
+     * LOGIKA 3: PERPANJANG BUKU / RENEW (Mahasiswa)
+     */
+    public function renew($id)
+    {
+        $loan = Loan::findOrFail($id);
+
+        // Validasi: Cuma boleh diperpanjang kalau belum telat
+        if (Carbon::now()->gt($loan->due_date)) {
+            return back()->with('error', 'Gagal perpanjang! Buku sudah lewat jatuh tempo.');
+        }
+
+        // Tambah 3 Hari
+        $newDueDate = Carbon::parse($loan->due_date)->addDays(3);
+        $loan->update(['due_date' => $newDueDate]);
+
+        return back()->with('success', 'Berhasil diperpanjang 3 hari!');
+    }
+
+    /**
+     * LOGIKA 4: BAYAR DENDA (Pegawai)
+     */
+    public function payFine($id)
+    {
+        $loan = Loan::findOrFail($id);
+        $loan->update(['payment_status' => 'paid']); // Tandai Lunas
+
+        return back()->with('success', 'Denda telah dibayar Lunas.');
     }
 }

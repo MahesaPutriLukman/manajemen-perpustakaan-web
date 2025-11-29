@@ -20,4 +20,9 @@ class Book extends Model
         'max_loan_days', 
         'fine_per_day',  
     ];
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
 }

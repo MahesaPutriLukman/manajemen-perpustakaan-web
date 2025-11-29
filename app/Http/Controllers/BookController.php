@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Book;
+use App\Models\Review;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class BookController extends Controller
 {
@@ -53,11 +55,54 @@ class BookController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Menampilkan Detail Buku + Review
      */
-    public function show(string $id)
+    public function show($id)
     {
-        //
+        // Ambil buku beserta review dan user yang me-review
+        $book = Book::with(['reviews.user'])->findOrFail($id);
+        
+        // Cek apakah user yang sedang login sudah pernah pinjam buku ini?
+        // (Syarat: Cuma boleh review kalau sudah pernah pinjam & statusnya 'returned')
+        $canReview = false;
+        
+        if (Auth::check() && Auth::user()->role == 'mahasiswa') {
+            $hasBorrowed = \App\Models\Loan::where('user_id', Auth::id())
+                            ->where('book_id', $book->id)
+                            ->where('status', 'returned')
+                            ->exists();
+            
+            // Cek juga apakah dia SUDAH pernah review (biar ga spam review berkali-kali)
+            $alreadyReviewed = Review::where('user_id', Auth::id())
+                                     ->where('book_id', $book->id)
+                                     ->exists();
+                                     
+            if ($hasBorrowed && !$alreadyReviewed) {
+                $canReview = true;
+            }
+        }
+
+        return view('books.show', compact('book', 'canReview'));
+    }
+
+    /**
+     * Simpan Review Baru
+     */
+    public function storeReview(Request $request, $book_id)
+    {
+        $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'required|string|max:1000',
+        ]);
+
+        Review::create([
+            'user_id' => Auth::id(),
+            'book_id' => $book_id,
+            'rating' => $request->rating,
+            'comment' => $request->comment,
+        ]);
+
+        return back()->with('success', 'Terima kasih atas ulasanmu!');
     }
 
     /**
