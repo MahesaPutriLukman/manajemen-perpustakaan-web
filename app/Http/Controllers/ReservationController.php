@@ -15,12 +15,10 @@ class ReservationController extends Controller
         $book = Book::findOrFail($request->book_id);
         $user = Auth::user();
 
-        // 1. Cek: Apakah stok beneran habis? (Validasi ganda)
         if ($book->stock > 0) {
             return back()->with('error', 'Buku masih tersedia! Silakan langsung pinjam, tidak perlu reservasi.');
         }
 
-        // 2. Cek: Apakah user SUDAH pernah reservasi buku ini dan belum selesai?
         $existingReservation = Reservation::where('user_id', $user->id)
                                           ->where('book_id', $book->id)
                                           ->where('status', 'active')
@@ -30,7 +28,6 @@ class ReservationController extends Controller
             return back()->with('error', 'Anda sudah masuk dalam antrean reservasi untuk buku ini.');
         }
 
-        // 3. Buat Reservasi
         Reservation::create([
             'user_id' => $user->id,
             'book_id' => $book->id,

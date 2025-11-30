@@ -65,10 +65,8 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
         
-        // Ambil semua notifikasi, urutkan terbaru, dan paginasi 10 per halaman
         $notifications = $user->notifications()->latest()->paginate(10);
 
-        // (Opsional) Tandai semua sebagai "Sudah Dibaca" saat membuka halaman ini
         $user->unreadNotifications->markAsRead();
 
         return view('profile.notifications', compact('notifications'));

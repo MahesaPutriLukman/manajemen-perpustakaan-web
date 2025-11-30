@@ -10,7 +10,7 @@ use Carbon\Carbon;
 class SendLoanReminders extends Command
 {
     /**
-     * Nama perintah (Signature) -> INI KUNCINYA
+     * Nama perintah (Signature) 
      */
     protected $signature = 'pustaka:send-reminders';
 
@@ -26,11 +26,11 @@ class SendLoanReminders extends Command
     {
         $this->info('Memulai proses pengecekan jatuh tempo...');
 
-        // 1. Tentukan Tanggal PENTING (Pakai startOfDay biar presisi)
+        // 1. Tentukan Tanggal PENTING 
         $today = Carbon::now()->startOfDay();      // Hari Ini
         $tomorrow = Carbon::now()->addDay()->startOfDay(); // Besok
 
-        // 2. Cari Peminjaman yang JATUH TEMPO HARI INI (H-0)
+        // 2. Cari Peminjaman yang jatuh tempo hari ini (H-0)
         $dueToday = Loan::with('user', 'book')
                         ->where('status', 'borrowed')
                         ->whereDate('due_date', $today)
@@ -42,7 +42,7 @@ class SendLoanReminders extends Command
             $loan->user->notify(new GeneralNotification($message));
         }
 
-        // 3. Cari Peminjaman yang JATUH TEMPO BESOK (H-1)
+        // 3. Cari Peminjaman yang jatuh tempo besok (H-1)
         $dueTomorrow = Loan::with('user', 'book')
                            ->where('status', 'borrowed')
                            ->whereDate('due_date', $tomorrow)

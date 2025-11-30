@@ -38,9 +38,8 @@ class RegisteredUserController extends Controller
                 'email', 
                 'max:255', 
                 'unique:'.User::class, 
-                // VALIDASI KHUSUS EMAIL KAMPUS
                 function ($attribute, $value, $fail) {
-                    if (!str_ends_with($value, 'unhas.ac.id')) { // Ganti dengan domain kampusmu
+                    if (!str_ends_with($value, 'unhas.ac.id')) { 
                         $fail('Gunakan email universitas (@unhas.ac.id) untuk mendaftar.');
                     }
                 },

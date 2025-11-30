@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('book_id')->constrained()->onDelete('cascade');
             
-            // Status: active (masih antri), fulfilled (sudah dapat buku/selesai)
             $table->enum('status', ['active', 'fulfilled'])->default('active');
             $table->timestamp('reservation_date')->useCurrent();
             

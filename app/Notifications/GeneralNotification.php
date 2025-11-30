@@ -18,7 +18,7 @@ class GeneralNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database']; // Simpan ke database
+        return ['database']; 
     }
 
     public function toArray(object $notifiable): array

@@ -12,30 +12,24 @@ class AdminController extends Controller
 {
     public function index()
     {
-        // 1. STATISTIK KARTU (Cards)
-        $totalBooks = Book::count(); // Jumlah Judul Buku
-        $totalStock = Book::sum('stock'); // Total Eksemplar Buku
+        $totalBooks = Book::count(); 
+        $totalStock = Book::sum('stock'); 
         
-        $activeLoans = Loan::where('status', 'borrowed')->count(); // Sedang Dipinjam
-        $returnedLoans = Loan::where('status', 'returned')->count(); // Sudah Kembali
+        $activeLoans = Loan::where('status', 'borrowed')->count(); 
+        $returnedLoans = Loan::where('status', 'returned')->count(); 
         
-        // Hitung Denda: Yang sudah dibayar vs Potensi (Pending)
         $totalFinesPaid = Loan::where('payment_status', 'paid')->sum('fine_amount');
         $totalFinesPending = Loan::where('payment_status', 'pending')->sum('fine_amount');
 
-        // 2. STATISTIK BUKU TERPOPULER (Top 5)
-        // Menggunakan Eloquent untuk menghitung buku mana yang paling sering ada di tabel loans
         $popularBooks = Book::withCount('loans')
                             ->orderBy('loans_count', 'desc')
                             ->take(5)
                             ->get();
 
-        // 3. DATA UNTUK GRAFIK (Peminjaman per Kategori)
-        // Kita hitung berapa kali buku dipinjam berdasarkan kategorinya
         $chartData = Book::select('category', DB::raw('count(*) as total'))
-                         ->join('loans', 'books.id', '=', 'loans.book_id') // Join ke tabel loans
+                         ->join('loans', 'books.id', '=', 'loans.book_id') 
                          ->groupBy('category')
-                         ->pluck('total', 'category'); // Hasil: ['Fiksi' => 10, 'Sains' => 5]
+                         ->pluck('total', 'category'); 
 
         return view('admin.dashboard', compact(
             'totalBooks', 

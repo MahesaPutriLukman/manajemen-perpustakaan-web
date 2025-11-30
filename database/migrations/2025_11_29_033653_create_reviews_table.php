@@ -13,12 +13,11 @@ return new class extends Migration
     {
         Schema::create('reviews', function (Blueprint $table) {
             $table->id();
-            // Relasi: Siapa yang komen, di buku apa?
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('book_id')->constrained()->onDelete('cascade');
             
-            $table->integer('rating'); // Bintang 1 sampai 5
-            $table->text('comment')->nullable(); // Isi komentar
+            $table->integer('rating'); 
+            $table->text('comment')->nullable(); 
             
             $table->timestamps();
         });

@@ -20,21 +20,17 @@ class Loan extends Model
         'payment_status', 
     ];
 
-    // --- TAMBAHAN PENTING: CASTING ---
-    // Ini mengubah string tanggal dari database menjadi Objek Carbon otomatis
     protected $casts = [
         'loan_date' => 'date',
         'due_date' => 'date',
         'return_date' => 'date',
     ];
 
-    // Relasi ke User
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // Relasi ke Buku
     public function book()
     {
         return $this->belongsTo(Book::class);

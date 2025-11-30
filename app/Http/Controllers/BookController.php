@@ -104,7 +104,7 @@ class BookController extends Controller
     }
 
     /**
-     * FUNGSI UPDATE (YANG BENAR & FINAL)
+     * FUNGSI UPDATE 
      */
     public function update(Request $request, $id)
     {
@@ -121,13 +121,10 @@ class BookController extends Controller
 
         $book = Book::findOrFail($id);
         
-        // Simpan stok lama
         $oldStock = $book->stock;
 
-        // Update Buku
         $book->update($request->all());
 
-        // --- LOGIKA RESERVASI ---
         if ($oldStock <= 0 && $book->stock > 0) {
             $reservations = Reservation::with('user')
                                        ->where('book_id', $book->id)
@@ -149,7 +146,6 @@ class BookController extends Controller
     {
         $book = Book::findOrFail($id);
 
-        // Cek Peminjaman
         $isBorrowed = $book->loans()->where('status', 'borrowed')->exists();
         if ($isBorrowed) {
             return back()->with('error', 'GAGAL HAPUS! Buku ini sedang dipinjam oleh mahasiswa.');

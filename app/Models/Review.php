@@ -16,13 +16,11 @@ class Review extends Model
         'comment',
     ];
 
-    // Relasi: Review ini milik User siapa?
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // Relasi: Review ini untuk Buku apa?
     public function book()
     {
         return $this->belongsTo(Book::class);
