@@ -10,6 +10,16 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     
+                    @if ($errors->any())
+                        <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                            <strong class="font-bold">Gagal Update!</strong>
+                            <ul class="mt-1 list-disc list-inside text-sm">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
                     <form action="{{ route('books.update', $book->id) }}" method="POST">
                         @csrf
                         @method('PUT') <div class="mb-4">
@@ -36,11 +46,9 @@
                             <div>
                                 <label class="block text-gray-700 text-sm font-bold mb-2">Kategori</label>
                                 <select name="category" class="shadow border rounded w-full py-2 px-3 text-gray-700 bg-white">
-                                    <option value="Fiksi" {{ $book->category == 'Fiksi' ? 'selected' : '' }}>Fiksi</option>
-                                    <option value="Sains" {{ $book->category == 'Sains' ? 'selected' : '' }}>Sains</option>
-                                    <option value="Teknologi" {{ $book->category == 'Teknologi' ? 'selected' : '' }}>Teknologi</option>
-                                    <option value="Sejarah" {{ $book->category == 'Sejarah' ? 'selected' : '' }}>Sejarah</option>
-                                    <option value="Lainnya" {{ $book->category == 'Lainnya' ? 'selected' : '' }}>Lainnya</option>
+                                    @foreach(['Fiksi', 'Sains', 'Teknologi', 'Sejarah', 'Lainnya'] as $cat)
+                                        <option value="{{ $cat }}" {{ (old('category', $book->category) == $cat) ? 'selected' : '' }}>{{ $cat }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                             <div>

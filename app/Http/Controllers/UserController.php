@@ -65,24 +65,25 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
+        // 1. Validasi
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            // PENTING: ignore($user->id) biar gak error saat simpan email sendiri
+            'email' => ['required', 'string', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users')->ignore($user->id)],
             'role' => ['required', 'in:admin,pegawai,mahasiswa'],
         ]);
 
-        // Update data dasar
+        // 2. Update Data Dasar
         $user->name = $request->name;
         $user->email = $request->email;
         $user->role = $request->role;
 
-        // Cek apakah password diganti? (Kalau kosong, jangan diubah)
+        // 3. Cek Password (Hanya update jika diisi)
         if ($request->filled('password')) {
             $request->validate([
-                // GANTI JUGA DI SINI JADI MIN:3
-                'password' => ['confirmed', 'min:3'],
+                'password' => ['confirmed', 'min:3'], // Sesuaikan aturan min:3 tadi
             ]);
-            $user->password = Hash::make($request->password);
+            $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
         }
 
         $user->save();

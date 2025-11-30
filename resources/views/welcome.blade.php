@@ -83,12 +83,12 @@
                             
                             @auth
                                 @if(Auth::user()->role == 'mahasiswa')
-                                    <a href="{{ route('books.index') }}" class="text-blue-600 hover:text-blue-800 font-semibold text-sm">Lihat & Pinjam →</a>
+                                    <a href="{{ route('books.show', $book->id) }}" class="text-blue-600 hover:text-blue-800 font-semibold text-sm">Lihat & Pinjam →</a>
                                 @else
                                     <span class="text-gray-400 text-sm">Admin View</span>
                                 @endif
                             @else
-                                <a href="{{ route('login') }}" class="text-indigo-600 hover:text-indigo-800 font-semibold text-sm">Login untuk Pinjam</a>
+                                <a href="{{ route('books.show', $book->id) }}" class="text-indigo-600 hover:text-indigo-800 font-semibold text-sm">Lihat Detail →</a>
                             @endauth
                         </div>
                     </div>

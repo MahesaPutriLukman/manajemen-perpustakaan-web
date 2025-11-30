@@ -54,7 +54,7 @@
                                     <form action="{{ route('loans.store') }}" method="POST" class="w-full">
                                         @csrf
                                         <input type="hidden" name="book_id" value="{{ $book->id }}">
-                                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition shadow" onclick="return confirm('Yakin pinjam buku ini?')">
+                                        <button type="button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition shadow btn-pinjam">
                                             Pinjam Sekarang
                                         </button>
                                     </form>
@@ -163,4 +163,27 @@
             </div>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.querySelectorAll('.btn-pinjam').forEach(button => {
+            button.addEventListener('click', function() {
+                let form = this.closest('form');
+                
+                Swal.fire({
+                    title: 'Konfirmasi Peminjaman',
+                    text: "Yakin ingin meminjam buku ini? Pastikan dikembalikan tepat waktu ya!",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#2563eb', // Blue
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Ya, Pinjam!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+    </script>
 </x-app-layout>

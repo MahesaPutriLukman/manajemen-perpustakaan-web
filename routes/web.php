@@ -2,11 +2,13 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth; // <--- INI PENTING (Baru Ditambah)
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\BookController; 
-use App\Http\Controllers\LoanController; // Biar rapi pakai ini juga
-use App\Http\Controllers\UserController; // Biar rapi
+use App\Http\Controllers\LoanController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ReservationController;
 use App\Models\Loan;
 use App\Models\Book;
 
@@ -16,11 +18,11 @@ use App\Models\Book;
 |--------------------------------------------------------------------------
 */
 
-// --- HALAMAN DEPAN (GUEST) ---
+// --- 1. ROUTE PUBLIC (Homepage & Katalog) ---
+
+// Halaman Depan (Welcome)
 Route::get('/', function (Request $request) {
     $query = Book::query();
-
-    // Logika Search
     if ($request->has('search') && $request->search != '') {
         $search = $request->search;
         $query->where(function($q) use ($search) {
@@ -29,100 +31,100 @@ Route::get('/', function (Request $request) {
               ->orWhere('category', 'like', '%' . $search . '%');
         });
     }
-
     $books = $query->latest()->get();
-
     return view('welcome', compact('books'));
 });
 
-// --- GROUP ROUTE ADMIN ---
-Route::middleware(['auth', 'role:admin'])->group(function () {
-    
-    // GANTI ROUTE DASHBOARD LAMA DENGAN INI:
-    Route::get('/admin/dashboard', [\App\Http\Controllers\AdminController::class, 'index'])->name('admin.dashboard');
+// Katalog Buku (Index) - PENTING: Taruh di atas
+Route::get('/books', [BookController::class, 'index'])->name('books.index');
 
-    // CRUD User Management (Tetap)
+
+// --- 2. ROUTE KHUSUS ROLE (MIDDLEWARE) ---
+
+// Group Admin
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
     Route::resource('users', UserController::class);
 });
 
-// --- GROUP ROUTE PEGAWAI ---
+// Group Pegawai
 Route::middleware(['auth', 'role:pegawai'])->group(function () {
     Route::get('/pegawai/dashboard', function () {
-        // Ambil peminjaman yang sedang aktif (borrowed)
-        $loans = Loan::with(['user', 'book'])
-                     ->where('status', 'borrowed')
-                     ->get();        
+        $loans = Loan::with(['user', 'book'])->where('status', 'borrowed')->get();        
         return view('pegawai.dashboard', compact('loans'));
     })->name('pegawai.dashboard');
+
     Route::get('/pegawai/trigger-reminders', function () {
-        // Panggil command robot
         \Illuminate\Support\Facades\Artisan::call('pustaka:send-reminders');
-        
-        // Kembali dengan pesan sukses yang JELAS
         return back()->with('success', '✅ Notifikasi Pengingat berhasil dikirim ke semua mahasiswa!');
     })->name('pegawai.trigger.reminders');
+
+    Route::get('/pegawai/notifications-log', function () {
+        $logs = \Illuminate\Support\Facades\DB::table('notifications')
+                ->orderBy('created_at', 'desc')
+                ->paginate(20);
+        return view('pegawai.notifications', compact('logs'));
+    })->name('pegawai.notifications');
 });
 
-// --- GROUP ROUTE MAHASISWA ---
-// --- GROUP ROUTE MAHASISWA ---
+// Group Mahasiswa
 Route::middleware(['auth', 'role:mahasiswa'])->group(function () {
     Route::get('/dashboard', function () {
         $user = Auth::user();
 
-        // 1. Data Pinjaman (Aktif & Riwayat)
+        // Data Pinjaman
         $activeLoans = Loan::with('book')->where('user_id', $user->id)->where('status', 'borrowed')->get();
         $historyLoans = Loan::with('book')->where('user_id', $user->id)->where('status', 'returned')->orderBy('updated_at', 'desc')->get();
 
-        // 2. Data Notifikasi
+        // Data Notifikasi
         $notifications = $user->notifications()->latest()->take(5)->get();
 
-        // 3. Data Reservasi (INI YANG TADI KURANG)
+        // Data Reservasi
         $reservations = \App\Models\Reservation::with('book')
                         ->where('user_id', $user->id)
                         ->where('status', 'active')
                         ->orderBy('created_at', 'desc')
                         ->get();
 
-        // 4. Data Rekomendasi
+        // Data Rekomendasi
         $lastLoan = Loan::with('book')->where('user_id', $user->id)->latest()->first();
         if ($lastLoan) {
             $category = $lastLoan->book->category;
             $recommendations = Book::where('category', $category)
                                 ->where('id', '!=', $lastLoan->book_id) 
-                                ->inRandomOrder()
-                                ->limit(3)
-                                ->get();
+                                ->inRandomOrder()->limit(3)->get();
         } else {
             $recommendations = Book::latest()->limit(3)->get();
         }
 
-        // Jangan lupa masukkan 'reservations' ke dalam compact
         return view('dashboard', compact('activeLoans', 'historyLoans', 'notifications', 'recommendations', 'reservations'));
     })->name('dashboard');
 });
 
-// --- ROUTE UMUM (LOGIN REQUIRED) ---
+
+// --- 3. ROUTE UMUM YANG BUTUH LOGIN (Authenticated Users) ---
 Route::middleware('auth')->group(function () {
-    // Profil User
+    // Profil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Manajemen Buku (CRUD)
-    Route::resource('books', BookController::class); 
+    // Manajemen Buku (KECUALI Index & Show yg sudah public)
+    // Resource ini menangani /books/create, /books/store, dll.
+    Route::resource('books', BookController::class)->except(['index', 'show']); 
 
-    // Manajemen Peminjaman & Denda
+    // Fitur Lain
     Route::post('/loans', [LoanController::class, 'store'])->name('loans.store');
     Route::post('/loans/{id}/renew', [LoanController::class, 'renew'])->name('loans.renew');
     Route::post('/loans/{id}/return', [LoanController::class, 'returnBook'])->name('loans.return');
     Route::post('/loans/{id}/pay', [LoanController::class, 'payFine'])->name('loans.pay');
-
-    // Kirim Review
     Route::post('/books/{id}/review', [BookController::class, 'storeReview'])->name('books.review');
-    // Route Riwayat Notifikasi Lengkap
     Route::get('/notifications', [ProfileController::class, 'notifications'])->name('notifications.index');
-    // Route Reservasi (Advanced Feature)
-    Route::post('/reservations', [\App\Http\Controllers\ReservationController::class, 'store'])->name('reservations.store');
+    Route::post('/reservations', [ReservationController::class, 'store'])->name('reservations.store');
 });
+
+// --- 4. ROUTE DETAIL BUKU (PUBLIC) ---
+// PENTING: Taruh ini PALING BAWAH supaya tidak memakan route 'create'
+Route::get('/books/{id}', [BookController::class, 'show'])->name('books.show');
 
 require __DIR__.'/auth.php';

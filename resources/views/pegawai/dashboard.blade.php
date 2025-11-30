@@ -27,15 +27,33 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 text-gray-900">
                     
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                         <h3 class="text-lg font-bold text-blue-700">📚 Daftar Buku yang Sedang Dipinjam</h3>
                         
-                        <a href="{{ route('pegawai.trigger.reminders') }}" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded shadow-lg text-sm flex items-center transition duration-200">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                            </svg>
-                            Kirim Pengingat Jatuh Tempo
-                        </a>
+                        <div class="flex gap-3">
+                            <a href="{{ route('pegawai.notifications') }}" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded shadow-lg text-sm flex items-center transition duration-200 transform hover:scale-105">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                                Lihat Log
+                            </a>
+
+                            @if($loans->isEmpty())
+                                <button type="button" disabled class="bg-purple-300 text-white font-bold py-2 px-4 rounded shadow-none text-sm flex items-center cursor-not-allowed opacity-60" title="Tidak ada peminjaman aktif saat ini">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                    </svg>
+                                    Kirim Pengingat Jatuh Tempo
+                                </button>
+                            @else
+                                <a href="{{ route('pegawai.trigger.reminders') }}" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded shadow-lg text-sm flex items-center transition duration-200 transform hover:scale-105">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                    </svg>
+                                    Kirim Pengingat Jatuh Tempo
+                                </a>
+                            @endif
+                        </div>
                     </div>
 
                     <div class="overflow-x-auto">
@@ -92,9 +110,9 @@
                                     </td>
 
                                     <td class="py-2 px-4 border-b text-center">
-                                        <form action="{{ route('loans.return', $loan->id) }}" method="POST" onsubmit="return confirm('Pastikan denda Rp {{ number_format($estimatedFine) }} (jika ada) sudah diinfokan ke mahasiswa. Lanjut?');">
+                                        <form action="{{ route('loans.return', $loan->id) }}" method="POST" class="confirm-return-form">
                                             @csrf
-                                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-800 text-white font-bold py-1 px-3 rounded text-sm shadow hover:shadow-lg transition">
+                                            <button type="button" class="bg-indigo-600 hover:bg-indigo-800 text-white font-bold py-1 px-3 rounded text-sm shadow btn-confirm-return" data-denda="{{ $estimatedFine }}">
                                                 Konfirmasi Kembali
                                             </button>
                                         </form>
@@ -139,9 +157,9 @@
                                         Rp {{ number_format($fine->fine_amount, 0, ',', '.') }}
                                     </td>
                                     <td class="py-2 px-4 border-b text-center">
-                                        <form action="{{ route('loans.pay', $fine->id) }}" method="POST">
+                                        <form action="{{ route('loans.pay', $fine->id) }}" method="POST" class="confirm-pay-form">
                                             @csrf
-                                            <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm shadow hover:shadow-lg transition" onclick="return confirm('Yakin denda sudah dibayar lunas?')">
+                                            <button type="button" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm shadow btn-confirm-pay">
                                                 Tandai Lunas ✅
                                             </button>
                                         </form>
@@ -162,4 +180,58 @@
 
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // 1. Konfirmasi Pengembalian Buku
+        document.querySelectorAll('.btn-confirm-return').forEach(button => {
+            button.addEventListener('click', function() {
+                let form = this.closest('form');
+                let denda = this.getAttribute('data-denda');
+                // Format angka ke Rupiah
+                let formattedDenda = new Intl.NumberFormat('id-ID').format(denda);
+
+                let pesanDenda = denda > 0 
+                    ? "Mahasiswa ini kena denda Rp " + formattedDenda + ". Pastikan sudah diinfokan!" 
+                    : "Tidak ada denda. Aman.";
+
+                Swal.fire({
+                    title: 'Terima Buku Kembali?',
+                    text: pesanDenda,
+                    icon: denda > 0 ? 'warning' : 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#4338ca', // Indigo
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Ya, Terima Buku',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+
+        // 2. Konfirmasi Pelunasan Denda
+        document.querySelectorAll('.btn-confirm-pay').forEach(button => {
+            button.addEventListener('click', function() {
+                let form = this.closest('form');
+                
+                Swal.fire({
+                    title: 'Konfirmasi Pelunasan?',
+                    text: "Pastikan uang denda sudah diterima.",
+                    icon: 'success',
+                    showCancelButton: true,
+                    confirmButtonColor: '#16a34a', // Green
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Ya, Lunas!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+    </script>
 </x-app-layout>

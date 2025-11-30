@@ -29,11 +29,13 @@
                     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                         
                         <div class="w-full md:w-auto">
-                            @if(Auth::user()->role !== 'mahasiswa')
-                                <a href="{{ route('books.create') }}" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded shadow-lg block text-center md:inline-block">
-                                    + Tambah Buku
-                                </a>
-                            @endif
+                            @auth
+                                @if(Auth::user()->role !== 'mahasiswa')
+                                    <a href="{{ route('books.create') }}" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded shadow-lg block text-center md:inline-block">
+                                        + Tambah Buku
+                                    </a>
+                                @endif
+                            @endauth
                         </div>
 
                         <form method="GET" action="{{ route('books.index') }}" class="w-full md:w-auto flex flex-col md:flex-row gap-2">
@@ -88,22 +90,43 @@
                                     <td class="py-2 px-4 border-b text-center">
                                         {{ $book->stock }}
                                     </td>
+                                    
                                     <td class="py-2 px-4 border-b text-center">
-                                        @if(Auth::user()->role !== 'mahasiswa')
-                                            <a href="{{ route('books.edit', $book->id) }}" class="text-blue-600 hover:text-blue-900 text-sm mr-2">Edit</a>
-                                        @else
-                                            @if($book->stock > 0)
-                                                <form action="{{ route('loans.store') }}" method="POST" class="inline">
-                                                    @csrf
-                                                    <input type="hidden" name="book_id" value="{{ $book->id }}">
-                                                    <button type="submit" class="bg-green-500 hover:bg-green-700 text-white text-xs font-bold py-1 px-3 rounded" onclick="return confirm('Yakin ingin meminjam buku ini?')">
-                                                        Pinjam
-                                                    </button>
-                                                </form>
+                                        @auth
+                                            {{-- JIKA SUDAH LOGIN --}}
+                                            @if(Auth::user()->role !== 'mahasiswa')
+                                                <div class="flex items-center justify-center gap-2">
+                                                    <a href="{{ route('books.edit', $book->id) }}" class="text-blue-600 hover:text-blue-900 text-sm mr-2">Edit</a>
+                                                    
+                                                    @if(Auth::user()->role == 'admin')
+                                                        <form action="{{ route('books.destroy', $book->id) }}" method="POST" class="inline delete-form">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="button" class="text-red-600 hover:text-red-900 text-sm font-bold btn-delete">
+                                                                Hapus
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                </div>
                                             @else
-                                                <span class="text-gray-400 text-xs italic">Stok Habis</span>
+                                                @if($book->stock > 0)
+                                                    <form action="{{ route('loans.store') }}" method="POST" class="inline">
+                                                        @csrf
+                                                        <input type="hidden" name="book_id" value="{{ $book->id }}">
+                                                        <button type="button" class="bg-green-500 hover:bg-green-700 text-white text-xs font-bold py-1 px-3 rounded btn-pinjam">
+                                                            Pinjam
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <span class="text-gray-400 text-xs italic">Stok Habis</span>
+                                                @endif
                                             @endif
-                                        @endif
+                                        @else
+                                            {{-- JIKA GUEST (BELUM LOGIN) --}}
+                                            <a href="{{ route('login') }}" class="bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold py-1 px-3 rounded">
+                                                Login
+                                            </a>
+                                        @endauth
                                     </td>
                                 </tr>
                                 @empty
@@ -121,4 +144,49 @@
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // Script untuk Tombol Pinjam (Mahasiswa)
+        document.querySelectorAll('.btn-pinjam').forEach(button => {
+            button.addEventListener('click', function() {
+                let form = this.closest('form');
+                Swal.fire({
+                    title: 'Pinjam Buku Ini?',
+                    text: "Pastikan kamu kembalikan tepat waktu, ya!",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#16a34a',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Ya, Pinjam!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+
+        // Script untuk Tombol Hapus (Admin)
+        document.querySelectorAll('.btn-delete').forEach(button => {
+            button.addEventListener('click', function() {
+                let form = this.closest('form');
+                Swal.fire({
+                    title: 'Yakin Hapus Buku?',
+                    text: "Data yang dihapus tidak bisa dikembalikan!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Ya, Hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+    </script>
 </x-app-layout>

@@ -32,5 +32,51 @@
                 {{ $slot }}
             </main>
         </div>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+        <script>
+            // 1. Script untuk Tombol Hapus (Class: btn-delete)
+            document.addEventListener('click', function(e) {
+                if (e.target && e.target.classList.contains('btn-delete')) {
+                    e.preventDefault();
+                    let form = e.target.closest('form');
+                    
+                    Swal.fire({
+                        title: 'Yakin mau hapus?',
+                        text: "Data yang dihapus tidak bisa dikembalikan!",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Ya, Hapus!',
+                        cancelButtonText: 'Batal'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
+                }
+            });
+
+            // 2. Script untuk Flash Message Sukses (Dari Controller)
+            @if(session('success'))
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: "{{ session('success') }}",
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            @endif
+
+            // 3. Script untuk Flash Message Error
+            @if(session('error'))
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal!',
+                    text: "{{ session('error') }}",
+                });
+            @endif
+        </script>
     </body>
 </html>
