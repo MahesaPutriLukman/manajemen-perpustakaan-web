@@ -3,7 +3,7 @@
 ![Laravel](https://img.shields.io/badge/Laravel-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-00000F?style=for-the-badge&logo=mysql&logoColor=white)
-![Chart.js](https://img.shields.io/badge/Chart.js-F5788D?style=for-the-badge&logo=chart.js&logoColor=white)
+
 
 **NeoPustaka** adalah aplikasi perpustakaan digital berbasis web modern yang dirancang untuk memenuhi kebutuhan tugas akhir Praktikum Pemrograman Web. Sistem ini mengelola sirkulasi buku secara komprehensif mulai dari peminjaman, pengembalian, denda otomatis, hingga sistem reservasi cerdas.
 
@@ -101,6 +101,8 @@ php artisan serve
 ```
 Buka browser dan akses: `http://127.0.0.1:8000`
 
+---
+
 ## 🔑 Akun Demo (Untuk Pengujian)
 
 Gunakan akun-akun berikut untuk menguji setiap role:
@@ -119,5 +121,6 @@ Untuk melihat fitur unggulan, silakan coba alur berikut:
 
 3. **Skenario Blokir:** Pastikan Mahasiswa punya denda "Belum Lunas" -> Coba Pinjam Buku Baru -> Sistem akan menolak.
 
+---
 
 © 2025 - Tugas Final Praktikum Pemrograman Web
